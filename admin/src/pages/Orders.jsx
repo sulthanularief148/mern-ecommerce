@@ -14,7 +14,7 @@ const Orders = ({ token }) => {
       const response = await axios.post(
         `${backendurl}/api/order/list`,
         {},
-        { headers: { token } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {
@@ -33,7 +33,7 @@ const Orders = ({ token }) => {
       const response = await axios.post(
         `${backendurl}/api/order/status`,
         { orderId, status: event.target.value },
-        { headers: { token } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (response.data.success) {
