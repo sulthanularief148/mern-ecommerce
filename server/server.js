@@ -36,7 +36,7 @@ cloudinaryConnect()
 
 // Middlewares
 const corsOptions = {
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    origin: ['https://mern-ecommerce-frontend-hazel.vercel.app', 'https://mern-ecommerce-admin-ten.vercel.app'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
 };
