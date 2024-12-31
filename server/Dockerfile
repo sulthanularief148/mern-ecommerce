@@ -1,18 +1,18 @@
-# Use Node.js image
+# Use Node.js as the base image
 FROM node:20.11.1
 
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and install dependencies
-COPY package.json ./
+# Copy package files and install dependencies
+COPY package.json package-lock.json ./
 RUN npm install
 
-# Copy the rest of the application files
-COPY . ./
+# Copy the entire application
+COPY . .
 
-# Expose port for the backend
+# Expose the server port
 EXPOSE 4000
 
-# Start the backend server
+# Start the server
 CMD ["npm", "start"]

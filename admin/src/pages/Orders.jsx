@@ -8,23 +8,30 @@ const Orders = ({ token }) => {
   const [orders, setOrders] = useState([]);
 
   const fetchAllOrders = async () => {
-    if (!token) return;
+    if (!token) {
+      console.log("No token provided.");
+      return null;
+    }
+    console.log("Using token:", token);
 
     try {
       const response = await axios.post(
         `${backendurl}/api/order/list`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { token } } 
       );
+      console.log("Using token:", token);
+
 
       if (response.data.success) {
         setOrders(response.data.orders.reverse());
       } else {
         toast.error(response.data.message);
+        console.log("Error occuring in listing the ordered product");
       }
     } catch (error) {
-      console.error(error);
-      toast.error(error.message);
+      console.error(error + "Error occuring in listing the ordered product");
+      toast.error(error.message, "Error occuring in listing the ordered product");
     }
   };
 
@@ -33,7 +40,7 @@ const Orders = ({ token }) => {
       const response = await axios.post(
         `${backendurl}/api/order/status`,
         { orderId, status: event.target.value },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { token } }
       );
 
       if (response.data.success) {

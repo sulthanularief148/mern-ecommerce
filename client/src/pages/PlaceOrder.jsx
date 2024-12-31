@@ -27,7 +27,7 @@ const PlaceOrder = () => {
     const initPay = (order) => {
         const option = {
             key: import.meta.env.VITE_RAZORPAY_API_KEY,
-            amout: order.amout,
+            amout: order.amount,
             currecny: order.currency,
             name: "Order Payment",
             description: "Order Payment",
@@ -88,8 +88,8 @@ const PlaceOrder = () => {
 
                     if (response.data.success) {
                         toast.success(response.data.message)
-                        navigate('/orders')
                         setCartItems({})
+                        navigate('/orders')
                     } else {
                         toast.error(response.data.message)
                     }

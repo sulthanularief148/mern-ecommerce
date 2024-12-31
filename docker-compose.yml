@@ -1,31 +1,84 @@
+# version: '3.8'
+
+# services:
+#   frontend:
+#     build:
+#       context: ./client
+#     ports:
+#       - "3000:5173"
+#     depends_on:
+#       - backend
+
+#   admin:
+#     build:
+#       context: ./admin
+#     ports:
+#       - "3001:5174" 
+#     depends_on:
+#       - backend
+
+#   backend:
+#     build:
+#       context: ./server
+#     ports:
+#       - "5000:4000"
+#     depends_on:
+#       - mongo
+#     env_file:
+#     - ./server/.env
+
+#   mongo:
+#     image: mongo:5
+#     container_name: mongodb
+#     ports:
+#       - "27017:27017"
+#     volumes:
+#       - mongo-data:/data/db
+
+# volumes:
+#   mongo-data:
+
 version: '3.8'
 
 services:
-  frontend:
+  client:
     build:
       context: ./client
     ports:
-      - "3000:5173"
+      - "5173:5173" 
     depends_on:
-      - backend
+      - server
+    volumes:
+      - ./client:/app
+    environment:
+      - NODE_ENV=development
 
   admin:
     build:
       context: ./admin
     ports:
-      - "3001:5174" 
+      - "5174:5174" 
     depends_on:
-      - backend
+      - server
+    volumes:
+      - ./admin:/app
+    environment:
+      - NODE_ENV=development
 
-  backend:
+  server:
     build:
       context: ./server
     ports:
-      - "5000:4000"
+      - "4000:4000"
     depends_on:
       - mongo
     env_file:
-    - ./server/.env
+      - ./server/.env
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
 
   mongo:
     image: mongo:5

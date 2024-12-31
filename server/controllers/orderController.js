@@ -2,7 +2,8 @@ import orderModel from "../models/orderModel.js"
 import userModel from "../models/userModel.js";
 import Stripe from 'stripe'
 import Razorpay from 'razorpay'
-// import jwt from 'json'
+import { body, validationResult } from 'express-validator';
+import jwt from 'jsonwebtoken'
 
 const currency = 'inr'
 const deliveryCharges = 10
@@ -12,9 +13,20 @@ const razorpayInstance = new Razorpay({
     key_id: process.env.RAZORPAY_API_KEY,
     key_secret: process.env.RAZORPAY_API_SECRET
 })
+const placeOrderValidation = [
+    body('userId').notEmpty().withMessage('User ID is required'),
+    body('items').isArray().withMessage('Items should be an array'),
+    body('amount').isNumeric().withMessage('Amount should be a number'),
+    body('address').notEmpty().withMessage('Address is required')
+];
 const placeOrder = async (req, res) => {
     try {
         const { userId, items, amount, address } = req.body;
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ success: false, errors: errors.array() });
+        }
+
         const orderData = { userId, items, amount, paymentMethod: "COD", payment: false, date: Date.now(), address };
         const newOrder = new orderModel(orderData);
         await newOrder.save()
@@ -32,6 +44,10 @@ const placeOrderStripe = async (req, res) => {
     try {
         const { userId, items, amount, address } = req.body;
         const { origin } = req.headers;
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ success: false, errors: errors.array() });
+        }
         const orderData = {
             userId, items, amount, address, paymentMethod: "Stripe", payment: false, date: Date.now()
         }
@@ -76,6 +92,9 @@ const placeOrderStripe = async (req, res) => {
 const verifyStripe = async (req, res) => {
     const { orderId, success, userId } = req.body;
     try {
+        if (typeof success !== 'boolean' || !orderId || !userId) {
+            return res.status(400).json({ success: false, message: "Invalid input data" });
+        }
         if (success === true) {
             await orderModel.findByIdAndUpdate(orderId, {
                 payment: true
@@ -130,6 +149,11 @@ const verifyStripe = async (req, res) => {
 const placeOrderRazorpay = async (req, res) => {
     try {
         const { userId, items, amount, address } = req.body;
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ success: false, errors: errors.array() });
+        }
+
         const orderData = {
             userId, items, amount, address, paymentMethod: "Stripe", payment: false, date: Date.now()
         }
@@ -156,7 +180,22 @@ const placeOrderRazorpay = async (req, res) => {
 // Verify Razorpay
 const verifyRazorpay = async (req, res) => {
     try {
-        const { userId, razorpay_order_id } = req.body;
+        // const { userId, razorpay_order_id } = req.body;
+        // Validate the input
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            return res.status(400).json({ success: false, message: "Invalid input data" });
+        }
+
+        // Verify the Razorpay signature
+        const body = razorpay_order_id + "|" + razorpay_payment_id;
+        const expected_signature = crypto.createHmac('sha256', process.env.RAZORPAY_API_SECRET)
+            .update(body)
+            .digest('hex');
+
+        if (expected_signature !== razorpay_signature) {
+            return res.status(400).json({ success: false, message: "Payment verification failed" });
+        }
+
         const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id)
         if (orderInfo.status === "paid") {
             await orderModel.findByIdAndUpdate(orderInfo.receipt, { payment: true })

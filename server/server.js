@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet';
 import connectDB from './config/mongodb.js'
 import cloudinaryConnect from './config/cloudinary.js';
 import userRouter from './routes/userRoute.js';
@@ -34,17 +35,20 @@ cloudinaryConnect()
     })
 
 // Middlewares
+const corsOptions = {
+    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+};
+
+app.use(helmet());
 app.use(express.json());
-app.use(cors());
-
-
+app.use(cors(corsOptions));
 app.use("/api/user", userRouter)
 app.use("/api/product", productRouter)
 app.use("/api/cart", cartRouter)
 app.use("/api/order", orderRouter)
 
-
-// API Endpoints
 app.get('/', (req, res) => {
     res.send('Hello World!')
 })

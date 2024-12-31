@@ -4,7 +4,7 @@ const addToCart = async (req, res) => {
     try {
         const { itemId, userId, size } = req.body;
         const userData = await userModel.findById(userId)
-        let cartData = await userData.cartData;
+        let cartData = await userData.cartData || {};
         if (cartData[itemId]) {
             if (cartData[itemId][size]) {
                 cartData[itemId][size] += 1;
@@ -15,6 +15,7 @@ const addToCart = async (req, res) => {
             cartData[itemId] = {}
             cartData[itemId][size] = 1
         }
+
         await userModel.findByIdAndUpdate(userId, { cartData })
         res.json({ success: true, message: "Added To Cart" })
     } catch (error) {
@@ -28,7 +29,11 @@ const updateUserCart = async (req, res) => {
     try {
         const { userId, itemId, size, quantity } = req.body;
         const userData = await userModel.findById(userId)
-        let cartData = userData.cartData;
+        let cartData = userData.cartData || {};
+        if (!cartData || Object.keys(cartData).length === 0) {
+            return res.json({ success: false, message: "Cart is empty" });
+        }
+
         cartData[itemId][size] = quantity;
         await userModel.findByIdAndUpdate(userId, { cartData })
         res.json({ success: true, message: "Updated Cart" })
@@ -44,7 +49,7 @@ const getUserCart = async (req, res) => {
     try {
         const { userId } = req.body;
         const userData = await userModel.findById(userId)
-        
+
         let cartData = userData.cartData;
         if (!cartData && !Object.keys(cartData).length === 0) {
             res.json({ success: false, message: "Cart is empty" })
