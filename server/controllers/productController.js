@@ -74,6 +74,30 @@ const listProduct = async (req, res) => {
     }
 };
 
+// const listProduct = async (req, res) => {
+//     const { page = 1, limit = 10 } = req.query; // Default to page 1 and limit 10 if not provided
+
+//     try {
+//         const products = await productModel
+//             .find({})
+//             .limit(limit * 1) // Convert limit to a number
+//             .skip((page - 1) * limit)
+//             .exec();
+
+//         // Get total documents in the collection for pagination
+//         const count = await productModel.countDocuments();
+
+//         res.json({
+//             success: true,
+//             products,
+//             totalPages: Math.ceil(count / limit),
+//             currentPage: page,
+//         });
+//     } catch (error) {
+//         console.error("Error listing products:", error.message);
+//         res.status(500).json({ success: false, message: `Error listing products: ${error.message}` });
+//     }
+// };
 
 // Single Product
 const singleProduct = async (req, res) => {

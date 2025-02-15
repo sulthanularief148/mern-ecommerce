@@ -19,11 +19,52 @@ const PlaceOrder = () => {
         state: '',
         country: '',
     })
+    const [validationErrors, setValidationErrors] = useState({});
+    const [isFormValid, setIsFormValid] = useState(false);
+    const validateField = (name, value) => {
+        let error = "";
+        switch (name) {
+            case "email":
+                if (!/\S+@\S+\.\S+/.test(value)) {
+                    error = "Invalid email format.";
+                }
+                break;
+            case "phone":
+                if (!/^\d{8}$/.test(value)) {
+                    error = "Phone must be 8 digits.";
+                }
+                break;
+            case "zipcode":
+                if (!/^\d{5,6}$/.test(value)) {
+                    error = "Invalid Zip Code.";
+                }
+                break;
+            default:
+                if (!value.trim()) {
+                    error = "This field is required.";
+                }
+        }
+        return error;
+    };
     const onChangeHandler = (e) => {
+
         const name = e.target.name
         const value = e.target.value
         setFormData((prevData) => ({ ...prevData, [name]: value }))
     }
+    const validateForm = () => {
+        let isValid = true;
+        const errors = {};
+        for (const [name, value] of Object.entries(formData)) {
+            const error = validateField(name, value);
+            if (error) {
+                isValid = false;
+            }
+            errors[name] = error;
+        }
+        setValidationErrors(errors);
+        setIsFormValid(isValid);
+    };
     const initPay = (order) => {
         const option = {
             key: import.meta.env.VITE_RAZORPAY_API_KEY,
@@ -55,6 +96,12 @@ const PlaceOrder = () => {
     }
     const onSubmitHandler = async (e) => {
         e.preventDefault();
+        validateForm();
+
+        if (!isFormValid) {
+            toast.error("Please fill out all fields correctly.");
+            return;
+        }
         try {
             let orderItems = [];
             for (const items in cartItems) {
@@ -133,7 +180,7 @@ const PlaceOrder = () => {
         }
     }
     return (
-        (<form onSubmit={onSubmitHandler} className="flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t ">
+        (<form onKeyUp={validateForm} onSubmit={onSubmitHandler} className="flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t ">
             <div className="flex flex-col gap-4 w-full sm:max-w-[480px]">
                 <div className="text-xl sm:text-2xl my-3">
                     <Title text1={`DELIVERY`} text2={`DETAILS`} />
@@ -176,7 +223,15 @@ const PlaceOrder = () => {
                         </div>
                     </div>
                     <div className="w-full text-end mt-8">
-                        <button type="submit" onClick={() => navigate("/orders")} className="bg-black text-white px-16 py-3 text-sm">PLACE ORDER</button>
+                        {/* <button type="submit" onClick={() => navigate("/orders")} className="bg-black text-white px-16 py-3 text-sm">PLACE ORDER</button> */}
+                        <button
+                            type="submit"
+                            disabled={!isFormValid}
+                            className={`px-16 py-3 text-sm ${isFormValid ? "bg-black text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                }`}
+                        >
+                            PLACE ORDER
+                        </button>
                     </div>
                 </div>
             </div>
