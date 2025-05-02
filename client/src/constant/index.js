@@ -71,20 +71,20 @@ export const content = {
         title1: "ABOUT",
         title2: "US",
         missionTitle: "Our Mission",
-        missionText: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum odio praesentium necessitatibus voluptatibus officia eos totam laudantium maxime harum labore atque eveniet officiis ad doloremque velit, repellendus soluta? Quod, atque!",
-        section1Text: "Lorem ipsum, dolor sit amet consectetur adipisicing elit. Soluta iure magnam fuga sed veritatis laboriosam adipisci laudantium accusantium itaque cum expedita fugit ut, corporis eius illum dicta, repellendus animi molestias.",
-        section2Text: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Rerum odio praesentium necessitatibus voluptatibus officia eos totam laudantium maxime harum labore atque eveniet officiis ad doloremque velit, repellendus soluta? Quod, atque!",
+        missionText: "At Textilem, our mission is to blend timeless tradition with modern elegance. We are committed to delivering high-quality textile products that celebrate culture, craftsmanship, and style—ensuring every customer feels confident and beautiful in what they wear.",
+        section1Text: "With a deep-rooted passion for fabrics and fashion, we bring you a curated collection of exquisite dresses and textiles that represent both heritage and innovation. Every piece is thoughtfully designed to cater to the dynamic preferences of our diverse clientele.",
+        section2Text: "From sourcing premium materials to ensuring impeccable finishing, we focus on every detail to offer products that stand out for their beauty, durability, and comfort. Our collections reflect a rich tapestry of culture, creativity, and commitment to excellence.",
         qualityAssurance: {
             title: "Quality Assurance",
-            description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Perspiciatis quaerat facere illum, obcaecati, omnis aspernatur voluptate, molestias repellat commodi quibusdam esse consequatur. Sint consequatur sapiente odit distinctio? Cupiditate, consectetur harum!"
+            description: "We take pride in offering only the finest fabrics and garments. Every product undergoes rigorous quality checks to ensure it meets our high standards of design, durability, and craftsmanship—so you receive nothing but the best."
         },
         convenience: {
             title: "Convenience",
-            description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Perspiciatis quaerat facere illum, obcaecati, omnis aspernatur voluptate, molestias repellat commodi quibusdam esse consequatur. Sint consequatur sapiente odit distinctio? Cupiditate, consectetur harum!"
+            description: "Shopping with us is effortless and enjoyable. From an intuitive online experience to quick delivery and easy returns, we ensure your journey with us is smooth, convenient, and tailored to your lifestyle."
         },
         customerService: {
             title: "Exceptional Customer Service",
-            description: "Lorem ipsum dolor sit amet consectetur adipisicing elit. Perspiciatis quaerat facere illum, obcaecati, omnis aspernatur voluptate, molestias repellat commodi quibusdam esse consequatur. Sint consequatur sapiente odit distinctio? Cupiditate, consectetur harum!"
+            description: "Your satisfaction is our priority. Our dedicated support team is always ready to assist you with inquiries, orders, and feedback—ensuring you feel valued and heard at every step of your shopping experience."
         }
     }
 };
@@ -172,13 +172,13 @@ export const heroContent = {
 /*----------------------------------------------------------------------------Best seller component from Home page-----------------------------------------------------------*/
 export const bestSellerContent = {
     title: "BEST SELLER",
-    subtitle: "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Voluptate vero maiores laborum neque omnis."
+    subtitle: "Discover our best-selling styles, loved by thousands! From timeless traditional wear to modern ethnic designs, these top picks combine comfort, elegance, and quality craftsmanship. Each piece reflects exceptional artistry and trend-forward details that make it a wardrobe favorite."
 };
 
 /*----------------------------------------------------------------------------Latest Collection component from Home Page-----------------------------------------------------*/
 export const latestCollectionContent = {
     title: "LATEST COLLECTION",
-    subtitle: "Lorem, ipsum dolor sit amet consectetur adipisicing elit. Voluptate vero maiores laborum neque omnis."
+    subtitle: "Step into the season with our latest collection – a perfect blend of fresh trends and classic charm. Explore vibrant colors, luxurious fabrics, and unique designs inspired by contemporary fashion and traditional roots. Curated to suit every mood and moment."
 };
 
 /*----------------------------------------------------------------------------Home Page Footer-------------------------------------------------------------------------------*/
@@ -191,7 +191,7 @@ export const policies = [
 /*---------------------------------------------------------------------------Footer content from Home page-------------------------------------------------------------------*/
 export const footerContent = {
     logo: assets.logo,
-    subtitle: `Lorem ipsum dolor sit amet consectetur adipisicing elit. Nostrum nesciunt ad enim! Ipsum maiores dignissimos laudantium, recusandae pariatur odio sunt natus et, reprehenderit dolorem cum tempore dolor ea saepe voluptatibus.`,
+    subtitle: `we craft more than just clothes – we bring culture to life through fabric. Specializing in high-quality textiles and elegant dresses, we are dedicated to delivering comfort, style, and authenticity in every thread. Join us on a journey of fashion rooted in tradition and tailored for today.`,
     company: [
         { id: 1, name: "HOME" },
         { id: 2, name: "ABOUT US" },
