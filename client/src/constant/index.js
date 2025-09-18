@@ -123,7 +123,7 @@ export const contactContent = {
         title: "Our Store",
         address: "34657 Royal Street, Chennai",
         phone: "+91 8248566678",
-        email: "support@webfarmtech.com"
+        email: "support@ecofashion.com"
     },
     careers: {
         title: "Careers at Webfarm",
@@ -200,9 +200,9 @@ export const footerContent = {
     ],
     contact: [
         { id: 1, info: "+91 8248566678" },
-        { id: 2, info: "support@webfarmtech.com" }
+        { id: 2, info: "support@ecofashion.com" }
     ],
-    copyright: `Copyright ${new Date().getFullYear()}@ WebFarmTech. All rights reserved.`
+    copyright: `Copyright ${new Date().getFullYear()}@ EcoFashion. All rights reserved.`
 }
 
 
