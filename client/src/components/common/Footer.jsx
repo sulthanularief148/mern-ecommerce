@@ -1,5 +1,7 @@
 import { SubTitle, Title } from "../Title"
 import { footerContent } from "../../constant"
+import ChatBot from "../ChatBot"
+
 const Footer = () => {
 
     return (
@@ -31,6 +33,7 @@ const Footer = () => {
                 <hr />
                 <SubTitle subtitle={footerContent.copyright} className="text-gray-600 w-full text-sm" />
             </div>
+            <ChatBot />
         </>
     )
 }
