@@ -3,6 +3,7 @@ import { createContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
+import { handleAxiosError } from "../../utils/handleAxiosError";
 
 export const ShopContext = createContext()
 const ShopContextProvider = (props) => {
@@ -43,7 +44,7 @@ const ShopContextProvider = (props) => {
                 console.log(response.data);
             } catch (error) {
                 console.log(error);
-                toast.error(error.message)
+                toast.error(handleAxiosError(error, "Failed to add item to cart"));
 
             }
         }
@@ -108,11 +109,11 @@ const ShopContextProvider = (props) => {
             if (response.data.success) {
                 setProducts(response.data.products)
             } else {
-                toast.error("Failed to fetch products")
+                toast.error(handleAxiosError(error, "Failed to fetch products"));
             }
         } catch (error) {
             toast.error(error.message)
-            console.error(error.message)
+            toast.error(handleAxiosError(error, "No Product Found"));
         }
     }
     const getUserCart = async (token) => {
@@ -124,7 +125,7 @@ const ShopContextProvider = (props) => {
 
         } catch (error) {
             console.error("Error fetching user cart:", error);
-            toast.error(error.message)
+            toast.error(handleAxiosError(error, "No cart items found. Add some products to your cart!"));
 
         }
     }

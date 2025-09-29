@@ -34,12 +34,27 @@ cloudinaryConnect()
         console.error('Failed to connect to Cloudinary:', error);
     })
 
-// Middlewares
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://mern-ecommerce-frontend-blush.vercel.app',
+    'https://mern-ecommerce-adminpanel.vercel.app'
+];
+
 const corsOptions = {
-    origin: ['https://mern-ecommerce-frontend-blush.vercel.app', 'https://mern-ecommerce-adminpanel.vercel.app', 'http://localhost:5174', 'http://localhost:5173'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
 };
+
+app.use(cors(corsOptions));
+
 
 app.use(helmet());
 app.use(express.json());

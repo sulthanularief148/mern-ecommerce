@@ -10,10 +10,9 @@ const Collection = () => {
   const [subCategory, setSubCategory] = useState([]);
   const [sortBy, setSortBy] = useState("relevent");
   const { search, showSearch } = useContext(ShopContext);
-
   const toggleFilter = (e, filterType) => {
-    const value = e.target.value;
-    console.log(`Filter Type: ${filterType}, Value: ${value}`); 
+    const value = e.target.value.toLowerCase(); // ensure lowercase comparison
+
     if (filterType === "CATEGORIES") {
       setCategories((prev) =>
         prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
@@ -25,17 +24,21 @@ const Collection = () => {
     }
   };
 
-
   const filterProducts = (products) => {
     if (search && showSearch) {
       return products.filter((product) =>
         product.name.toLowerCase().includes(search.toLowerCase())
       );
     }
+
     return products.filter((product) => {
-      const categoryMatch = categories.length === 0 || categories.includes(product.category);
-      const typeMatch = subCategory.length === 0 || subCategory.includes(product.type);
-      return categoryMatch && typeMatch;
+      const categoryMatch =
+        categories.length === 0 || categories.includes(product.category?.toLowerCase());
+
+      const subCategoryMatch =
+        subCategory.length === 0 || subCategory.includes(product.subCategory?.toLowerCase());
+
+      return categoryMatch && subCategoryMatch;
     });
   };
 

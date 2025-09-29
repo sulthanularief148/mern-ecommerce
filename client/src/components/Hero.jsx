@@ -21,7 +21,7 @@ const Hero = () => {
                     </div>
                 </div>
             </div>
-            <img src={heroContent.heroImage} alt='hero-img' className='w-full sm:w-1/2' />
+            <img src="https://stage-cdnblog.dataweave.com/wp-content/uploads/2022/07/sf-hero@1x-min-e1688037120365.jpg" alt='hero-img' className='w-full sm:w-1/2' />
         </div>
     )
 }

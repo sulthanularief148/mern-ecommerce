@@ -121,12 +121,12 @@ export const contactContent = {
     },
     store: {
         title: "Our Store",
-        address: "34657 Royal Street, Chennai",
+        address: "3/12,  Royal Street, Chennai",
         phone: "+91 8248566678",
         email: "support@ecofashion.com"
     },
     careers: {
-        title: "Careers at Webfarm",
+        title: "Careers at Ecofashion",
         description: "Learn more about Team and openings",
         buttonText: "Explore jobs"
     }
