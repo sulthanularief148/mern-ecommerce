@@ -1,63 +1,75 @@
-// Product.js
 import { useParams } from "react-router-dom";
 import { SectionWrapper } from "../hoc";
 import { useContext, useEffect, useState } from "react";
 import { ShopContext } from "../context/ShopContext";
-import { assets } from "../assets";
-import { DescriptionReview, ProductInfo, RelatedProduct } from "../components";
-import { productContent } from "../constant";
+import { DescriptionReview, ProductInfo, RelatedProduct, RecentlyViewed, FrequentlyBoughtTogether, ProductImageZoom } from "../components";
+import { recordRecentlyViewed } from "../lib/recentlyViewed";
+import { useJsonLd } from "../lib/useJsonLd";
 
 const Product = () => {
   const { productsId } = useParams();
-  const { products } = useContext(ShopContext);
+  const { products, productsLoaded, currency } = useContext(ShopContext);
   const [productData, setProductData] = useState(false);
-  const [image, setImage] = useState("");
-
-  const fetchProducts = async () => {
-    products.map((item) => {
-      if (item._id === productsId) {
-        setProductData(item);
-        setImage(item?.images[0]);
-        return null;
-      }
-    });
-  };
 
   useEffect(() => {
-    fetchProducts();
-  }, [productsId]);
+    const found = products.find((item) => item.id === productsId);
+    if (found) {
+      setProductData(found);
+      recordRecentlyViewed(found.id);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [productsId, products]);
 
-  return productData ? (
+  useJsonLd(productData ? {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: productData.name,
+    description: productData.description,
+    image: productData.images,
+    sku: productData.sku || undefined,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: currency === "₹" ? "INR" : currency,
+      price: productData.price,
+      availability: productData.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+    },
+    ...(productData.averageRating ? {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: productData.averageRating,
+        reviewCount: productData.reviewCount,
+      },
+    } : {}),
+  } : null);
+
+  if (!productData) {
+    if (!productsLoaded) {
+      return <div className="border-t-2 pt-10 text-center text-gray-400 py-20">Loading product…</div>;
+    }
+    return (
+      <div className="border-t-2 pt-10 text-center text-gray-400 py-20">
+        Product not found. It may have been removed.
+      </div>
+    );
+  }
+
+  return (
     <div className="border-t-2 pt-10 transition-opacity ease-in duration-500 opacity-100">
       {/* Product Data */}
       <div className="flex gap-12 sm:gap-12 flex-col sm:flex-row">
         {/* Product Images */}
-        <div className="flex-1 flex flex-col-reverse gap-3 sm:flex-row">
-          <div className="flex sm:flex-col overflow-x-auto sm:w-[18.7%] w-full sm:overflow-y-scroll justify-between sm:justify-normal">
-            {productData.images.map((item, index) => (
-              <img
-                onClick={() => setImage(item)}
-                src={item}
-                key={index}
-                className="w-24% sm:w-full sm:mb-3 flex-shrink-0 cursor-pointer"
-              />
-            ))}
-          </div>
-          <div className="w-full sm:w-[80%]">
-            <img src={image} className="w-full h-auto" alt="" />
-          </div>
-        </div>
+        <ProductImageZoom images={productData.images} videoUrl={productData.videoUrl} name={productData.name} />
         <ProductInfo productData={productData} />
       </div>
-      <DescriptionReview />
+      <DescriptionReview productId={productData.id} description={productData.description} productData={productData} />
+      <FrequentlyBoughtTogether productId={productData.id} />
       {/* Related Products */}
       <RelatedProduct
         category={productData.category}
         subCategory={productData.subCategory}
       />
+      <RecentlyViewed excludeId={productData.id} />
     </div>
-  ) : (
-    <div className="opacity-0"></div>
   );
 };
 

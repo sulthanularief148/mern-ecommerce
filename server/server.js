@@ -1,71 +1,58 @@
-import dotenv from 'dotenv';
-import express from 'express'
-import cors from 'cors'
-import helmet from 'helmet';
-import connectDB from './config/mongodb.js'
-import cloudinaryConnect from './config/cloudinary.js';
-import userRouter from './routes/userRoute.js';
-import productRouter from './routes/productRoute.js';
-import cartRouter from "./routes/cartRoute.js"
-import orderRouter from './routes/orderRoute.js';
-dotenv.config();
+import { env, assertEnv } from './src/config/env.js';
+import { initSentry, captureException } from './src/config/sentry.js';
+import { logger } from './src/config/logger.js';
+import { connectDatabase, disconnectDatabase } from './src/config/database.js';
+import { connectRedis, redis } from './src/config/redis.js';
+import { connectCloudinary } from './src/config/cloudinary.js';
+import { createApp } from './src/app.js';
+import { startScheduler } from './src/jobs/scheduler.js';
 
-// App Config
-const app = express()
-const port = process.env.PORT || 3000
+assertEnv(logger);
+initSentry();
 
+const app = createApp();
 
-// Connect to MongoDB
-connectDB()
-    .then(() => {
-        console.log('Connected to MongoDB Successfully')
-    })
-    .catch((error) => {
-        console.error('Failed to connect to MongoDB:', error);
-        process.exit(1);
+async function bootstrap() {
+    try {
+        await connectRedis();
+    } catch (err) {
+        logger.error(`Failed to connect to Redis: ${err.message}`);
+        if (!env.isVercel) process.exit(1);
+    }
+
+    try {
+        await connectDatabase();
+    } catch (err) {
+        logger.error(`Failed to connect to MySQL: ${err.message}`);
+        if (!env.isVercel) process.exit(1);
+    }
+
+    connectCloudinary();
+
+    app.listen(env.port, () => {
+        logger.info(`Webfarm's Wear API listening on port ${env.port} [${env.nodeEnv}]`);
     });
 
-// Cloudinary Connection
-cloudinaryConnect()
-    .then(() => {
-        console.log('Connected to Cloudinary Successfully')
-    })
-    .catch((error) => {
-        console.error('Failed to connect to Cloudinary:', error);
-    })
+    // Serverless (Vercel) invocations are too short-lived for a persistent
+    // interval — scheduled jobs there would need a platform cron trigger
+    // instead, hitting a dedicated endpoint.
+    if (!env.isVercel) {
+        startScheduler();
+    }
+}
 
-const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'https://mern-ecommerce-frontend-blush.vercel.app',
-    'https://mern-ecommerce-adminpanel.vercel.app'
-];
+bootstrap();
 
-const corsOptions = {
-    origin: function (origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-};
+process.on('unhandledRejection', (reason) => {
+    logger.error(`Unhandled Rejection: ${reason?.stack || reason}`);
+    captureException(reason instanceof Error ? reason : new Error(String(reason)));
+});
 
-app.use(cors(corsOptions));
+process.on('SIGTERM', async () => {
+    logger.info('SIGTERM received, shutting down gracefully');
+    await disconnectDatabase();
+    redis.disconnect();
+    process.exit(0);
+});
 
-
-app.use(helmet());
-app.use(express.json());
-app.use(cors(corsOptions));
-app.use("/api/user", userRouter)
-app.use("/api/product", productRouter)
-app.use("/api/cart", cartRouter)
-app.use("/api/order", orderRouter)
-
-app.get('/', (req, res) => {
-    res.send('Hello World!')
-})
-
-app.listen(port, () => console.log(`The server running on PORT ${port}`))
+export default app;

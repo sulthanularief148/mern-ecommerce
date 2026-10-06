@@ -1,6 +1,12 @@
+import { Link } from "react-router-dom";
+
 const ToggleText = ({ currentState, setCurrentState, loginContent }) => (
   <div className="w-full flex justify-between text-sm mt-[-8px]">
-    <p className="cursor-pointer">{loginContent.forgotPassword}</p>
+    {currentState === "Login" ? (
+      <Link to="/forgot-password" className="cursor-pointer hover:text-accent-600 transition-colors duration-250">
+        {loginContent.forgotPassword}
+      </Link>
+    ) : <span />}
     {currentState === "Login" ? (
       <p onClick={() => setCurrentState("Sign Up")} className="cursor-pointer">
         {loginContent.createAccount}

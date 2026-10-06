@@ -1,61 +1,40 @@
 import { useContext, useEffect, useState } from "react";
-import { loginContent } from "../constant";
-import { SectionWrapper } from "../hoc";
-import { InputField, ToggleText } from "../components";
+import { Link, useSearchParams } from "react-router-dom";
+import { AuthShell, AuthInput } from "../components";
+import { UserIcon, MailIcon, LockIcon } from "../components/authIcons";
 import { ShopContext } from "../context/ShopContext";
-import axios from "axios";
+import { handleAxiosError } from "../../utils/handleAxiosError";
+import * as authApi from "../services/authApi";
 import { toast } from "react-toastify";
 
 const Login = () => {
-  const { token, setToken, backendurl, navigate } = useContext(ShopContext);
-  const [currentState, setCurrentState] = useState("Login");
+  const { user, setUser, navigate } = useContext(ShopContext);
+  const [searchParams] = useSearchParams();
+  const [currentState, setCurrentState] = useState(searchParams.get("ref") ? "Sign Up" : "Login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode] = useState(searchParams.get("ref") || "");
   const [loading, setLoading] = useState(false);
+
+  const isSignUp = currentState === "Sign Up";
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (currentState === "Sign Up") {
-        // Sign Up
-        const response = await axios.post(`${backendurl}/api/user/register`, {
-          name,
-          email,
-          password,
-        });
-
-        if (response.data.success) {
-          setToken(response.data.token);
-          localStorage.setItem("token", response.data.token);
-          toast.success(response.data.message || "Registered successfully!");
-        } else {
-          toast.error(response.data.message || "Sign up failed!");
-        }
+      if (isSignUp) {
+        const registeredUser = await authApi.register({ name, email, password, referralCode });
+        setUser(registeredUser);
+        toast.success(referralCode ? "Registered successfully! Referral bonus applied." : "Registered successfully!");
       } else {
-        // Login
-        const response = await axios.post(`${backendurl}/api/user/login`, {
-          email,
-          password,
-        });
-
-        if (response.data.success) {
-          setToken(response.data.token);
-          localStorage.setItem("token", response.data.token);
-          toast.success(response.data.message || "Logged in successfully!");
-        } else {
-          toast.error(response.data.message || "Invalid credentials!");
-        }
+        const loggedInUser = await authApi.login({ email, password });
+        setUser(loggedInUser);
+        toast.success("Logged in successfully!");
       }
     } catch (error) {
-      // Axios / network error handling
-      const message =
-        error.response?.data?.message ||
-        error.message ||
-        "Something went wrong!";
-      toast.error(message);
+      toast.error(handleAxiosError(error, "Something went wrong!"));
       console.error("Auth Error:", error);
     } finally {
       setLoading(false);
@@ -63,64 +42,58 @@ const Login = () => {
   };
 
   useEffect(() => {
-    if (token) navigate("/");
-  }, [token, navigate]);
+    if (user) navigate("/");
+  }, [user, navigate]);
 
   return (
-    <form
-      onSubmit={onSubmitHandler}
-      className="flex flex-col items-center w-[90%] sm:max-w-96 m-auto mt-14 gap-4 text-gray-800"
+    <AuthShell
+      eyebrow={isSignUp ? "Join us" : "Welcome back"}
+      title={isSignUp ? "Create your account" : "Sign in"}
+      subtitle={isSignUp ? "A few details and you're in." : "Pick up right where you left off."}
     >
-      <div className="inline-flex items-center gap-2 mb-2 mt-10">
-        <p className="prata-regular text-3xl">{currentState}</p>
-        <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
-      </div>
+      <form onSubmit={onSubmitHandler} className="flex flex-col gap-3.5">
+        {referralCode && isSignUp && (
+          <p className="text-xs text-accent-700 bg-accent-50 border border-accent-100 px-3 py-2.5 rounded-xl">
+            You&apos;ve been referred — sign up to get a bonus of loyalty points!
+          </p>
+        )}
 
-      {currentState === "Sign Up" && (
-        <InputField
-          type="text"
-          placeholder={loginContent.placeholders.name}
-          required
-          onChange={(e) => setName(e.target.value)}
-          value={name}
-        />
-      )}
+        {isSignUp && (
+          <AuthInput icon={<UserIcon />} label="Full name" name="name" required
+            value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
+        )}
+        <AuthInput icon={<MailIcon />} label="Email" type="email" name="email" required
+          value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" />
+        <AuthInput icon={<LockIcon />} label="Password" type="password" name="password" required
+          value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={isSignUp ? "new-password" : "current-password"} />
 
-      <InputField
-        type="email"
-        placeholder={loginContent.placeholders.email}
-        required
-        onChange={(e) => setEmail(e.target.value)}
-        value={email}
-      />
-      <InputField
-        type="password"
-        placeholder={loginContent.placeholders.password}
-        required
-        onChange={(e) => setPassword(e.target.value)}
-        value={password}
-      />
+        {!isSignUp && (
+          <Link to="/forgot-password" className="self-end text-xs text-gray-400 hover:text-accent-600 transition-colors duration-250 -mt-1">
+            Forgot your password?
+          </Link>
+        )}
 
-      <ToggleText
-        currentState={currentState}
-        setCurrentState={setCurrentState}
-        loginContent={loginContent}
-      />
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-2 bg-ink text-white font-medium py-3 rounded-xl hover:bg-accent-600 hover:shadow-soft transition-all duration-250 disabled:opacity-60"
+        >
+          {loading ? "Please wait…" : isSignUp ? "Create account" : "Sign in"}
+        </button>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className={`bg-black text-white font-light px-8 py-2 mt-4 ${loading ? "opacity-60 cursor-not-allowed" : ""
-          }`}
-      >
-        {loading
-          ? "Please wait..."
-          : currentState === "Login"
-            ? loginContent.buttonText.login
-            : loginContent.buttonText.signUp}
-      </button>
-    </form>
+        <p className="text-center text-sm text-gray-500 mt-2">
+          {isSignUp ? "Already have an account?" : "New to Webfarm's Wear?"}{" "}
+          <button
+            type="button"
+            onClick={() => setCurrentState(isSignUp ? "Login" : "Sign Up")}
+            className="text-ink font-medium hover:text-accent-600 transition-colors duration-250"
+          >
+            {isSignUp ? "Sign in" : "Create an account"}
+          </button>
+        </p>
+      </form>
+    </AuthShell>
   );
 };
 
-export default SectionWrapper(Login, "login");
+export default Login;

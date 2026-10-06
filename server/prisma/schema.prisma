@@ -1,0 +1,379 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum PaymentMethod {
+  COD
+  STRIPE
+  RAZORPAY
+}
+
+enum OrderStatus {
+  ORDER_PLACED
+  PACKING
+  SHIPPED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum CouponType {
+  PERCENT
+  FLAT
+}
+
+enum BannerSlot {
+  HERO
+  PROMO
+  EDITORS_PICK
+}
+
+model User {
+  id            String   @id @default(uuid())
+  name          String   @db.VarChar(120)
+  email         String   @unique @db.VarChar(190)
+  password      String
+  role          Role     @default(CUSTOMER)
+  loyaltyPoints Int      @default(0)
+  referralCode  String   @unique @db.VarChar(20)
+  referredById  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  cartItems        CartItem[]
+  orders           Order[]
+  wishlist         WishlistItem[]
+  reviews          Review[]
+  stockAdjustments StockAdjustment[]
+  returnRequests   ReturnRequest[]
+  questions        ProductQuestion[]
+  pointsLedger     PointsLedgerEntry[]
+
+  referredBy User?  @relation("Referrals", fields: [referredById], references: [id])
+  referrals  User[] @relation("Referrals")
+
+  @@index([role])
+  @@index([referredById])
+  @@map("users")
+}
+
+model Product {
+  id                String   @id @default(uuid())
+  name              String   @db.VarChar(200)
+  description       String   @db.Text
+  price             Decimal  @db.Decimal(10, 2)
+  compareAtPrice    Decimal? @db.Decimal(10, 2)
+  stock             Int      @default(50)
+  category          String   @db.VarChar(60)
+  subCategory       String   @db.VarChar(60)
+  bestseller        Boolean  @default(false)
+  images            Json
+  sizes             Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Textile-specific attributes
+  sku               String?  @unique @db.VarChar(40)
+  fabric            String?  @db.VarChar(80)
+  fabricComposition String?  @db.VarChar(160)
+  pattern           String?  @db.VarChar(60)
+  color             String?  @db.VarChar(40)
+  occasion          String?  @db.VarChar(60)
+  collectionName    String?  @db.VarChar(80)
+  gsm               Int?
+  dimensions        String?  @db.VarChar(120)
+  careInstructions  String?  @db.Text
+  sizeChart         Json?
+  videoUrl          String?  @db.VarChar(500)
+
+  cartItems        CartItem[]
+  orderItems       OrderItem[]
+  wishlistedBy     WishlistItem[]
+  reviews          Review[]
+  stockAdjustments StockAdjustment[]
+  questions        ProductQuestion[]
+
+  @@index([category])
+  @@index([subCategory])
+  @@index([bestseller])
+  @@index([createdAt])
+  @@index([fabric])
+  @@index([color])
+  @@index([collectionName])
+  @@map("products")
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("wishlist_items")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  rating    Int      @db.TinyInt
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId])
+  @@map("reviews")
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  size      String   @db.VarChar(20)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, size])
+  @@index([userId])
+  @@map("cart_items")
+}
+
+model Order {
+  id             String        @id @default(uuid())
+  userId         String
+  subtotal       Decimal       @db.Decimal(10, 2)
+  discountAmount Decimal       @default(0) @db.Decimal(10, 2)
+  taxAmount      Decimal       @default(0) @db.Decimal(10, 2)
+  shippingFee    Decimal       @default(0) @db.Decimal(10, 2)
+  amount         Decimal       @db.Decimal(10, 2)
+  couponCode     String?       @db.VarChar(40)
+  deliveryMethod String        @default("STANDARD") @db.VarChar(20)
+  address        Json
+  status         OrderStatus   @default(ORDER_PLACED)
+  paymentMethod  PaymentMethod
+  payment        Boolean       @default(false)
+  paymentRef     String?       @db.VarChar(191)
+  stripeSessionId String?      @db.VarChar(191)
+  trackingNumber String?       @db.VarChar(80)
+  carrier        String?       @db.VarChar(60)
+  trackingUrl    String?       @db.VarChar(500)
+  pointsRedeemed Int           @default(0)
+  pointsEarned   Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id])
+  items          OrderItem[]
+  returnRequests ReturnRequest[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("orders")
+}
+
+model Coupon {
+  id               String     @id @default(uuid())
+  code             String     @unique @db.VarChar(40)
+  type             CouponType
+  value            Decimal    @db.Decimal(10, 2)
+  minOrderAmount   Decimal    @default(0) @db.Decimal(10, 2)
+  maxDiscount      Decimal?   @db.Decimal(10, 2)
+  usageLimit       Int?
+  timesUsed        Int        @default(0)
+  active           Boolean    @default(true)
+  expiresAt        DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@map("coupons")
+}
+
+model Banner {
+  id        String     @id @default(uuid())
+  slot      BannerSlot
+  title     String     @db.VarChar(160)
+  subtitle  String?    @db.VarChar(300)
+  imageUrl  String     @db.VarChar(500)
+  linkUrl   String?    @db.VarChar(300)
+  ctaLabel  String?    @db.VarChar(60)
+  sortOrder Int        @default(0)
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([slot])
+  @@index([active])
+  @@map("banners")
+}
+
+model Collection {
+  id          String   @id @default(uuid())
+  name        String   @unique @db.VarChar(80)
+  description String?  @db.VarChar(300)
+  imageUrl    String?  @db.VarChar(500)
+  sortOrder   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("collections")
+}
+
+model StockAdjustment {
+  id            String   @id @default(uuid())
+  productId     String
+  delta         Int
+  reason        String   @db.VarChar(200)
+  previousStock Int
+  newStock      Int
+  adjustedById  String
+  createdAt     DateTime @default(now())
+
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  adjustedBy  User    @relation(fields: [adjustedById], references: [id])
+
+  @@index([productId])
+  @@index([createdAt])
+  @@map("stock_adjustments")
+}
+
+model StoreSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique @db.VarChar(80)
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("store_settings")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  name      String  @db.VarChar(200)
+  price     Decimal @db.Decimal(10, 2)
+  size      String  @db.VarChar(20)
+  quantity  Int
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+// Append-only trail of sensitive admin actions (role changes, order status
+// overrides, settings edits) — actorId is intentionally not a foreign key so
+// the log survives even if the acting account is later deleted.
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  actorEmail String   @db.VarChar(190)
+  action     String   @db.VarChar(80)
+  targetType String   @db.VarChar(60)
+  targetId   String?  @db.VarChar(191)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// One row per user tracking the last time an abandoned-cart reminder was
+// sent — separate from CartItem so "already reminded" survives the cart
+// being cleared/changed, and so we can throttle to at most one email per
+// cooldown window even if the scheduler runs more often than that.
+model CartReminder {
+  userId     String   @id
+  lastSentAt DateTime
+
+  @@map("cart_reminders")
+}
+
+enum ReturnStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+model ReturnRequest {
+  id        String       @id @default(uuid())
+  orderId   String
+  userId    String
+  reason    String       @db.VarChar(500)
+  status    ReturnStatus @default(REQUESTED)
+  adminNote String?      @db.VarChar(500)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
+  @@map("return_requests")
+}
+
+// Unanswered questions stay admin-only (not exposed on the product page) so
+// the storefront never shows an awkward "no answer yet" — they only become
+// public once answer/answeredAt are set.
+model ProductQuestion {
+  id         String    @id @default(uuid())
+  productId  String
+  userId     String
+  question   String    @db.VarChar(500)
+  answer     String?   @db.VarChar(1000)
+  answeredAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_questions")
+}
+
+// Append-only — the source of truth for a user's balance is the sum of
+// their entries, not just User.loyaltyPoints (which is a denormalized
+// running total kept in sync alongside it for fast reads without a SUM
+// query on every profile/checkout load).
+model PointsLedgerEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  points    Int
+  reason    String   @db.VarChar(40)
+  orderId   String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("points_ledger_entries")
+}

@@ -1,31 +1,25 @@
-# Use Node.js for building the admin panel
-FROM node:20.11.1 AS builder
-
-# Set working directory
+# ---- build ----
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Copy package.json and package-lock.json for deterministic builds
 COPY package.json package-lock.json ./
-
-# Install dependencies with a clean environment
 RUN npm ci
 
-# Copy application files and build the admin panel
-COPY . ./
+ARG VITE_BACKEND_URL
+ENV VITE_BACKEND_URL=${VITE_BACKEND_URL}
+
+COPY . .
 RUN npm run build
 
-# Use Nginx to serve the admin panel
-FROM nginx:alpine
-
-# Remove default Nginx configuration to prevent conflicts
+# ---- serve ----
+FROM nginx:1.27-alpine AS production
 RUN rm /etc/nginx/conf.d/default.conf
-
-# Copy the build files to Nginx's serving directory
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/build /usr/share/nginx/html
 
+EXPOSE 80
 
-# Expose port 80
-EXPOSE 5174
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://127.0.0.1/health || exit 1
 
-# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

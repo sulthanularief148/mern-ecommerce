@@ -1,49 +1,44 @@
 import React, { useContext, useEffect } from 'react';
 import { ShopContext } from '../context/ShopContext';
 import { useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import { handleAxiosError } from '../../utils/handleAxiosError';
+import * as orderApi from '../services/orderApi';
 import { toast } from 'react-toastify';
 
 const Verify = () => {
-    const { token, navigate, backendurl, setCartItems } = useContext(ShopContext);
+    const { user, authReady, navigate, loadCart } = useContext(ShopContext);
     const [searchParams] = useSearchParams();
 
-    const success = searchParams.get("success") === "true"; // Convert to boolean
     const orderId = searchParams.get("orderId");
 
-    const verifyPayment = async () => {
-        if (!token) {
+    useEffect(() => {
+        if (!authReady) return;
+
+        if (!user) {
             toast.error("Unauthorized. Please login.");
-            return navigate('/login');
+            navigate('/login');
+            return;
         }
 
-        try {
-            const response = await axios.post(
-                `${backendurl}/api/order/verifyStripe`,
-                { orderId, success },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-
-            if (response.data.success) {
-                setCartItems({});
-                toast.success(response.data.message);
-                navigate('/orders');
-            } else {
-                toast.error(response.data.message);
+        (async () => {
+            try {
+                const result = await orderApi.verifyStripe({ orderId });
+                if (result.paid) {
+                    await loadCart();
+                    toast.success("Payment confirmed");
+                    navigate(`/order/success/${orderId}`);
+                } else {
+                    toast.error("Payment was not completed");
+                    navigate('/cart');
+                }
+            } catch (error) {
+                toast.error(handleAxiosError(error, "Payment verification failed. Please try again."));
                 navigate('/cart');
             }
-        } catch (error) {
-            console.error("Payment verification error:", error);
-            toast.error("Payment verification failed. Please try again.");
-            navigate('/cart');
-        }
-    };
+        })();
+    }, [authReady, user]);
 
-    useEffect(() => {
-        verifyPayment();
-    }, [token]);
-
-    return <div>Verifying your payment...</div>;
+    return <div className="py-20 text-center text-gray-400">Verifying your payment…</div>;
 };
 
 export default Verify;

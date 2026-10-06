@@ -14,8 +14,8 @@ export const navMenu = [
     },
     {
         id: 3,
-        link: "COLLECTION",
-        path: "/collection"
+        link: "SHOP",
+        path: "/shop"
     },
     {
         id: 4,
@@ -48,8 +48,8 @@ export const profileMenuText = [
 /*====================================================================================PAGES==================================================================================*/
 /*--------------------------------------------------------------------------------Collection Page----------------------------------------------------------------------------*/
 export const filters = [
-    { title: "CATEGORIES", options: ['Men', 'Women', 'Kids'] },
-    { title: "SUBCATEGORY", options: ['Topwear', 'Bottomwear', 'Winterwear'] }
+    { title: "CATEGORIES", options: ['Men', 'Women', 'Kids', 'Accessories'] },
+    { title: "SUBCATEGORY", options: ['Topwear', 'Bottomwear', 'Winterwear', 'Footwear', 'Bags'] }
 ]
 
 export const collectionContent = {
@@ -60,8 +60,9 @@ export const collectionContent = {
     },
     sortingOptions: [
         { value: "relevent", label: "Sort by : Relavent" },
-        { value: "low-high", label: "Sort by : Low to High" },
-        { value: "high-low", label: "Sort by : High to Low" }
+        { value: "newest", label: "Sort by : Newest" },
+        { value: "low-high", label: "Sort by : Price Low to High" },
+        { value: "high-low", label: "Sort by : Price High to Low" }
     ]
 }
 
@@ -71,7 +72,7 @@ export const content = {
         title1: "ABOUT",
         title2: "US",
         missionTitle: "Our Mission",
-        missionText: "At Textilem, our mission is to blend timeless tradition with modern elegance. We are committed to delivering high-quality textile products that celebrate culture, craftsmanship, and style—ensuring every customer feels confident and beautiful in what they wear.",
+        missionText: "At Webfarm's Wear, our mission is to blend timeless tradition with modern elegance. We are committed to delivering high-quality textile products that celebrate culture, craftsmanship, and style—ensuring every customer feels confident and beautiful in what they wear.",
         section1Text: "With a deep-rooted passion for fabrics and fashion, we bring you a curated collection of exquisite dresses and textiles that represent both heritage and innovation. Every piece is thoughtfully designed to cater to the dynamic preferences of our diverse clientele.",
         section2Text: "From sourcing premium materials to ensuring impeccable finishing, we focus on every detail to offer products that stand out for their beauty, durability, and comfort. Our collections reflect a rich tapestry of culture, creativity, and commitment to excellence.",
         qualityAssurance: {
@@ -123,10 +124,10 @@ export const contactContent = {
         title: "Our Store",
         address: "3/12,  Royal Street, Chennai",
         phone: "+91 8248566678",
-        email: "support@ecofashion.com"
+        email: "support@webfarmswear.com"
     },
     careers: {
-        title: "Careers at Ecofashion",
+        title: "Careers at Webfarm's Wear",
         description: "Learn more about Team and openings",
         buttonText: "Explore jobs"
     }
@@ -153,7 +154,7 @@ export const productContent = {
 /*----------------------------------------------------------------------------Newsletter component from Home page------------------------------------------------------------*/
 export const newsLetterContent = {
     title: "Subscribe Now & get 20% off",
-    subtitle: "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Fugiat, repudiandae sapiente soluta, quaerat ab cum molestiae quasi provident id esse ex in maxime. Accusamus, quis molestiae excepturi dolorum eligendi quos?",
+    subtitle: "Be the first to know about new arrivals, sustainable drops, and members-only offers.",
     form: {
         placeholder: "Enter your email",
         buttonText: "SUBSCRIBE"
@@ -165,7 +166,7 @@ export const heroContent = {
     bestSeller: "BEST SELLER",
     title: "Latest Arrivals",
     shopNow: "SHOP NOW",
-    heroImage: assets.hero_img
+    heroImage: "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=1200&q=80&auto=format&fit=crop"
 }
 
 
@@ -183,26 +184,19 @@ export const latestCollectionContent = {
 
 /*----------------------------------------------------------------------------Home Page Footer-------------------------------------------------------------------------------*/
 export const policies = [
-    { image: assets.exchange_icon, text1: 'Exchange Policy', text2: 'Lorem ipsum dolor sit amet, consectetur' },
-    { image: assets.quality_icon, text1: '7 Return Policy', text2: 'We accept hassle-free returns with in 7 days' },
-    { image: assets.support_img, text1: 'Shipping Policy', text2: 'Fast and reliable shipping worldwide' },
+    { image: assets.exchange_icon, text1: 'Easy Exchanges', text2: 'Wrong size or color? Swap it within 7 days of delivery' },
+    { image: assets.quality_icon, text1: '7-Day Returns', text2: 'We accept hassle-free returns within 7 days' },
+    { image: assets.support_img, text1: 'Shipping Policy', text2: 'Standard or express delivery across India' },
 ];
 
 /*---------------------------------------------------------------------------Footer content from Home page-------------------------------------------------------------------*/
 export const footerContent = {
-    logo: assets.logo,
     subtitle: `we craft more than just clothes – we bring culture to life through fabric. Specializing in high-quality textiles and elegant dresses, we are dedicated to delivering comfort, style, and authenticity in every thread. Join us on a journey of fashion rooted in tradition and tailored for today.`,
-    company: [
-        { id: 1, name: "HOME" },
-        { id: 2, name: "ABOUT US" },
-        { id: 3, name: "DELIVERY" },
-        { id: 4, name: "PRIVACY POLICY" }
-    ],
     contact: [
         { id: 1, info: "+91 8248566678" },
-        { id: 2, info: "support@ecofashion.com" }
+        { id: 2, info: "support@webfarmswear.com" }
     ],
-    copyright: `Copyright ${new Date().getFullYear()}@ EcoFashion. All rights reserved.`
+    copyright: `Copyright ${new Date().getFullYear()}@ Webfarm's Wear. All rights reserved.`
 }
 
 

@@ -1,4 +1,4 @@
-import { Title } from "../components";
+import { Title } from "./Title";
 import { collectionContent } from "../constant";
 const SortAndTitle = ({ sortBy, setSortBy }) => {
     return (

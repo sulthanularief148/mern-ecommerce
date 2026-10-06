@@ -1,79 +1,84 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext } from "react";
+import { Link } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 import { SectionWrapper } from "../hoc";
 import { CartTotal, Title } from "../components";
 import { assets } from "../assets";
 
 const Cart = () => {
-  const { products, cartItems, currency, updateQuantity, navigate } = useContext(ShopContext);
-  const [cartData, setCartData] = useState([]);
-  useEffect(() => {
-    if (products.length > 0) {
-      const tempData = [];
-      for (const itemId in cartItems) {
-        for (const size in cartItems[itemId]) {
-          if (cartItems[itemId][size] > 0) {
-            tempData.push({
-              id: itemId,
-              size,
-              quantity: cartItems[itemId][size],
-            });
-          }
-        }
-      }
-      setCartData(tempData);
-    }
-
-  }, [cartItems, products]);
+  const { cartItems, currency, updateQuantity } = useContext(ShopContext);
 
   return (
     <div className="border-t pt-14">
       <Title text1="YOUR" text2="CART" />
       <div>
-        {cartData.length === 0 ? (
-          <p>Your cart is empty.</p>
+        {cartItems.length === 0 ? (
+          <p className="py-12 text-center text-gray-400">Your cart is empty.</p>
         ) : (
-          cartData.map((item) => {
-            const productData = products.find((product) => product?._id === item?.id);
-            if (!productData) {
-              return <p key={item.id + item?.size}>Product not found for ID: {item.id}</p>;
-            }
-            return (
-              <div
-                key={`${item.id}-${item.size}`}
-                className="py-4 border-t border-b text-gray-700 grid grid-cols-[4fr_1fr_1fr] items-center gap-4"
-              >
-                <div className="flex items-start gap-6">
-                  <img
-                    src={productData?.images[0] || "/placeholder-image.jpg"}
-                    alt={productData?.name || "Product"}
-                    className="w-16 sm:w-20"
-                  />
-                  <div className="">
-                    <p className="text-xs sm:text-lg font-medium">{productData?.name}</p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm">{currency}{productData.price * item.quantity}</p>
-                      <p className="px-2 sm:px-3 sm:py-1 border bg-slate-50">Size: {item?.size}</p>
-                    </div>
+          cartItems.map((item) => (
+            <div
+              key={item.id}
+              className="py-4 border-t border-b text-gray-700 grid grid-cols-[4fr_1fr_1fr] items-center gap-4"
+            >
+              <div className="flex items-start gap-6">
+                <img
+                  src={item.product?.images?.[0] || "/placeholder-product.svg"}
+                  alt={item.product?.name || "Product"}
+                  className="w-16 sm:w-20 rounded-xl"
+                />
+                <div className="">
+                  <p className="text-xs sm:text-lg font-medium">{item.product?.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm">{currency}{item.product?.price * item.quantity}</p>
+                    <p className="px-2 sm:px-3 sm:py-1 border border-gray-200 bg-gray-50 rounded-full">Size: {item.size}</p>
                   </div>
-
                 </div>
-                <input onChange={(e) => e.target.value === '' || e.target.value === '0' ? null : updateQuantity(item.id, item.size, Number(e.target.value))} type="number" defaultValue={item.quantity} min={1} className="border max-w-10 sm:max-w-20 py-1 px-1 sm:px-2" />
-                <img onClick={() => updateQuantity(item.id, item.size, 0)} src={assets.bin_icon} className="cursor-pointer w-4 sm:w-5" alt="" />
               </div>
-            );
-          })
+              <input
+                onChange={(e) => e.target.value === '' || e.target.value === '0' ? null : updateQuantity(item.id, Number(e.target.value))}
+                type="number"
+                defaultValue={item.quantity}
+                min={1}
+                className="border border-gray-200 rounded-xl max-w-10 sm:max-w-20 py-1.5 px-1 sm:px-2 bg-gray-50 focus:border-accent-500 focus:bg-white outline-none transition-colors duration-250"
+              />
+              <img
+                onClick={() => updateQuantity(item.id, 0)}
+                src={assets.bin_icon}
+                className="cursor-pointer w-4 sm:w-5 opacity-60 hover:opacity-100 transition-opacity"
+                alt="Remove item"
+              />
+            </div>
+          ))
         )}
       </div>
-      <div className="justify-end flex my-20">
-        <div className="w-full sm:w-[450px]">
+      <div className="flex flex-col sm:flex-row justify-between items-start gap-6 my-20">
+        <Link
+          to="/shop"
+          className="order-2 sm:order-1 text-sm text-gray-500 hover:text-ink underline underline-offset-2"
+        >
+          ← Continue Shopping
+        </Link>
+        <div className="order-1 sm:order-2 w-full sm:w-[450px]">
           <CartTotal />
           <div className="w-full text-end">
-            <button onClick={() => navigate("/place-order")} className="text-white bg-black text-sm my-8 px-8 py-3">PROCEED TO CHECKOUT</button>
+            <PlaceOrderButton />
           </div>
         </div>
       </div>
     </div>
+  );
+};
+
+const PlaceOrderButton = () => {
+  const { navigate, cartItems } = useContext(ShopContext);
+  return (
+    <button
+      disabled={cartItems.length === 0}
+      onClick={() => navigate("/checkout")}
+      className="text-white bg-ink text-sm my-8 px-8 py-3 rounded-full hover:bg-accent-600 hover:shadow-soft transition-all duration-250 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-ink"
+    >
+      PROCEED TO CHECKOUT
+    </button>
   );
 };
 

@@ -1,92 +1,133 @@
-# version: '3.8'
-
-# services:
-#   frontend:
-#     build:
-#       context: ./client
-#     ports:
-#       - "3000:5173"
-#     depends_on:
-#       - backend
-
-#   admin:
-#     build:
-#       context: ./admin
-#     ports:
-#       - "3001:5174" 
-#     depends_on:
-#       - backend
-
-#   backend:
-#     build:
-#       context: ./server
-#     ports:
-#       - "5000:4000"
-#     depends_on:
-#       - mongo
-#     env_file:
-#     - ./server/.env
-
-#   mongo:
-#     image: mongo:5
-#     container_name: mongodb
-#     ports:
-#       - "27017:27017"
-#     volumes:
-#       - mongo-data:/data/db
-
-# volumes:
-#   mongo-data:
-
-version: '3.8'
-
 services:
-  client:
-    build:
-      context: ./client
-    ports:
-      - "5173:5173" 
-    depends_on:
-      - server
-    volumes:
-      - ./client:/app
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file: ./server/.env
     environment:
-      - NODE_ENV=development
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
-  admin:
-    build:
-      context: ./admin
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "5174:5174" 
-    depends_on:
-      - server
+      - "6379:6379"
     volumes:
-      - ./admin:/app
-    environment:
-      - NODE_ENV=development
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   server:
     build:
       context: ./server
+    restart: unless-stopped
+    env_file: ./server/.env
+    environment:
+      PORT: 4000
+      # Override the host-facing defaults from server/.env with the
+      # container-network hostnames docker-compose's DNS resolves for us.
+      DATABASE_URL: "mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}"
+      REDIS_URL: "redis://redis:6379"
+      ALLOWED_ORIGINS: "http://localhost:8090,http://localhost:5174,http://localhost:4000"
+      CLIENT_URL: "http://localhost:8090"
     ports:
       - "4000:4000"
     depends_on:
-      - mongo
-    env_file:
-      - ./server/.env
-    volumes:
-      - ./server:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  mongo:
-    image: mongo:5
-    container_name: mongodb
+  client:
+    build:
+      context: ./client
+      args:
+        # Empty on purpose — the client is only reachable through the
+        # gateway, so API calls use relative /api/... paths and never
+        # need CORS. See gateway/nginx.conf.
+        VITE_BACKEND_URL: ""
+        # Optional — set these (and rebuild) to turn on GA4 / Meta Pixel.
+        # Left empty, analytics stays fully inert. See client/src/lib/analytics.js.
+        VITE_GA4_ID: "${VITE_GA4_ID:-}"
+        VITE_META_PIXEL_ID: "${VITE_META_PIXEL_ID:-}"
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      - server
+
+  admin:
+    build:
+      context: ./admin
+      args:
+        # Empty/relative — admin's own nginx proxies /api/ to the server
+        # container directly (see admin/nginx.conf), so the browser calls
+        # itself, not a cross-origin API host. This used to be an absolute
+        # "http://localhost:4000", which made every admin API call
+        # cross-origin and violated the admin CSP's `connect-src 'self'`
+        # (added later, in a security-hardening pass) — every fetch from
+        # the admin panel was silently blocked by the browser with no
+        # server-side trace at all. Same-origin also sidesteps the
+        # SameSite=Strict refresh-cookie issue a cross-origin admin origin
+        # would otherwise have.
+        VITE_BACKEND_URL: ""
+    restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "5174:80"
+    depends_on:
+      - server
+
+  gateway:
+    build:
+      context: ./gateway
+    restart: unless-stopped
+    ports:
+      - "8090:80"
+    depends_on:
+      - client
+      - server
+
+  # Automated daily MySQL dumps, gzipped, to a host-mounted folder (so they
+  # survive `docker volume prune`/`docker compose down -v`) with a rolling
+  # retention window. No manual backup step to remember.
+  mysql-backup:
+    image: mysql:8.0
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_PWD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      BACKUP_RETENTION_DAYS: "14"
+      BACKUP_INTERVAL_SECONDS: "86400"
     volumes:
-      - mongo-data:/data/db
+      - ./backups/mysql:/backups
+      - ./scripts/mysql-backup.sh:/mysql-backup.sh:ro
+    entrypoint: ["sh", "/mysql-backup.sh"]
 
 volumes:
-  mongo-data:
+  mysql-data:
+  redis-data:

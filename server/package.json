@@ -1,32 +1,54 @@
 {
   "name": "server",
-  "version": "1.0.0",
-  "description": "Ecommerce Backend",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "Webfarm's Wear Ecommerce Backend — layered architecture on MySQL/Prisma + Redis",
+  "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "server": "nodemon server.js",
+    "dev": "nodemon server.js",
+    "postinstall": "prisma generate",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:migrate:dev": "prisma migrate dev",
+    "prisma:seed": "node prisma/seed.js",
+    "prisma:studio": "prisma studio",
+    "seed:demo-products": "node prisma/demo-products.mjs",
     "test": "jest"
   },
   "author": "Sulthanul Arief M",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.2.1",
+    "@sentry/node": "^10.74.0",
     "bcryptjs": "^2.4.3",
-    "body-parser": "^1.20.3",
     "cloudinary": "^2.5.1",
+    "compression": "^1.7.5",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "express-validator": "^7.2.1",
+    "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
+    "hpp": "^0.2.3",
+    "ioredis": "^5.4.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.9.2",
     "multer": "^1.4.5-lts.1",
-    "nodemon": "^3.1.9",
-    "password-validator": "^5.3.0",
+    "nodemailer": "^10.0.10",
+    "papaparse": "^5.7.0",
+    "pdfkit": "^0.20.2",
+    "rate-limit-redis": "^4.2.0",
     "razorpay": "^2.9.5",
     "stripe": "^17.5.0",
-    "validator": "^13.12.0"
+    "winston": "^3.17.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "jest": "^30.5.1",
+    "nodemon": "^3.1.9",
+    "prisma": "^6.2.1"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }

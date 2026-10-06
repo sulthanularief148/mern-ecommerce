@@ -5,9 +5,11 @@ import { ShopContext } from "../context/ShopContext";
 const CartIcon = () => {
     const { getCartCount } = useContext(ShopContext)
     return (
-        <Link to="/cart" className="relative">
+        <Link to="/cart" className="relative opacity-70 hover:opacity-100 transition-opacity">
             <img src={assets.cart_icon} className="w-5 min-w-5" alt="Cart Icon" />
-            <p className="absolute right-[-5px] bottom-[-5px] text-white bg-black text-center leading-4 rounded-full aspect-square w-4 text-[10px]">{getCartCount()}</p>
+            {getCartCount() > 0 && (
+                <p className="absolute right-[-6px] bottom-[-6px] text-white bg-accent-500 text-center leading-4 rounded-full aspect-square w-4 text-[10px]">{getCartCount()}</p>
+            )}
         </Link>
     )
 

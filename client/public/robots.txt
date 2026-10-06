@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /verify
+Disallow: /order/success/
+
+Sitemap: /sitemap.xml

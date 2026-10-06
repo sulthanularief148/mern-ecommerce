@@ -1,142 +1,195 @@
-import { createContext, useEffect, useState } from "react";
-// import { products } from "../assets";
+import { createContext, useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import axios from 'axios';
 import { handleAxiosError } from "../../utils/handleAxiosError";
+import { setAccessToken, setAuthChangeListener, refreshAccessToken, backendurl } from "../lib/apiClient";
+import * as authApi from "../services/authApi";
+import * as productApi from "../services/productApi";
+import * as cartApi from "../services/cartApi";
+import * as wishlistApi from "../services/wishlistApi";
+import * as couponApi from "../services/couponApi";
+import * as settingsApi from "../services/settingsApi";
 
 export const ShopContext = createContext()
+
 const ShopContextProvider = (props) => {
     const currency = "₹"
-    const delivery_fee = 10
     const [search, setSearch] = useState("")
     const [showSearch, setShowSearch] = useState(false)
-    const [cartItems, setCartItems] = useState({})
+    const [cartItems, setCartItems] = useState([])
+    const [wishlist, setWishlist] = useState([])
     const [products, setProducts] = useState([])
-    const [token, setToken] = useState('')
+    const [productsLoaded, setProductsLoaded] = useState(false)
+    const [user, setUser] = useState(null)
+    const [authReady, setAuthReady] = useState(false)
+    const [appliedCoupon, setAppliedCoupon] = useState(null) // { code, discountAmount, type, value }
+    const [couponLoading, setCouponLoading] = useState(false)
+    const [deliveryMethod, setDeliveryMethod] = useState("STANDARD")
+    const [storeSettings, setStoreSettings] = useState(null)
     const navigate = useNavigate()
-    const backendurl = import.meta.env.VITE_BACKEND_URL;
-    const addToCart = async (itemId, size) => {
+
+    useEffect(() => {
+        settingsApi.fetchPublicSettings().then(setStoreSettings).catch(() => {});
+    }, []);
+
+    const token = Boolean(user)
+
+    const loadCart = useCallback(async () => {
+        try {
+            const items = await cartApi.fetchCart();
+            setCartItems(items);
+        } catch (error) {
+            console.error("Error fetching cart:", error);
+        }
+    }, []);
+
+    const getProducts = useCallback(async () => {
+        try {
+            const list = await productApi.fetchProducts();
+            setProducts(list);
+        } catch (error) {
+            toast.error(handleAxiosError(error, "Failed to load products. Please try again later."));
+        } finally {
+            setProductsLoaded(true);
+        }
+    }, []);
+
+    const addToCart = async (productId, size) => {
         if (!size) {
-            console.error("Error");
-            toast.error("Please select the size")
-            return
+            toast.error("Please select the size");
+            return;
         }
-        let cartData = structuredClone(cartItems)
-
-        if (cartData[itemId]) {
-            if (cartData[itemId][size]) {
-                cartData[itemId][size] += 1
-            }
-            else {
-                cartData[itemId][size] = 1
-            }
+        if (!user) {
+            navigate('/login');
+            return;
         }
-        else {
-            cartData[itemId] = {}
-            cartData[itemId][size] = 1
+        try {
+            await cartApi.addCartItem({ productId, size, quantity: 1 });
+            await loadCart();
+        } catch (error) {
+            toast.error(handleAxiosError(error, "Failed to add item to cart"));
         }
-        setCartItems(cartData)
-        if (token) {
-            try {
-
-                const response = await axios.post(`${backendurl}/api/cart/add`, { itemId, size }, { headers: { Authorization: `Bearer ${token}` } });
-                console.log(response.data);
-            } catch (error) {
-                console.log(error);
-                toast.error(handleAxiosError(error, "Failed to add item to cart"));
-
-            }
-        }
-
-    }
-    const getCartCount = () => {
-        let totalCount = 0;
-        for (let items in cartItems) {
-            for (let size in cartItems[items]) {
-                try {
-                    if (cartItems[items][size] > 0) {
-                        totalCount += cartItems[items][size]
-                    }
-                } catch (error) {
-
-                }
-            }
-        }
-        return totalCount
-    }
-    const getCartAmount = () => {
-        let totalAmount = 0;
-        for (let itemId in cartItems) {
-            const itemInfo = products.find((product) => product._id === itemId);
-            if (!itemInfo) continue;
-
-            for (let size in cartItems[itemId]) {
-                try {
-                    const quantity = cartItems[itemId][size];
-                    if (quantity > 0) {
-                        totalAmount += itemInfo.price * quantity;
-                    }
-                } catch (error) {
-                    console.error("Error calculating cart amount:", error);
-                }
-            }
-        }
-        return totalAmount;
     };
 
-    const updateQuantity = async (itemId, size, quantity) => {
-        let cartData = structuredClone(cartItems)
-        cartData[itemId][size] = quantity;
-        setCartItems(cartData)
-        if (token) {
-            try {
-                const response = await axios.post(backendurl + '/api/cart/update', { itemId, size, quantity }, { headers: { Authorization: `Bearer ${token}` } })
-                console.log(response);
-
-            } catch (error) {
-                console.log(error);
-                toast.error(error.message)
-
-            }
-        }
-    }
-    const getProducts = async () => {
+    const updateQuantity = async (itemId, quantity) => {
         try {
-            const response = await axios.get(backendurl + "/api/product/list");
-            console.log(response.data);
-
-            if (response.data.success) {
-                setProducts(response.data.products)
+            if (quantity <= 0) {
+                await cartApi.removeCartItem(itemId);
             } else {
-                toast.error(handleAxiosError(error, "Failed to fetch products"));
+                await cartApi.updateCartItem(itemId, quantity);
             }
+            await loadCart();
         } catch (error) {
-            toast.error(error.message)
-            toast.error(handleAxiosError(error, "No Product Found"));
+            toast.error(handleAxiosError(error, "Failed to update cart"));
         }
-    }
-    const getUserCart = async (token) => {
+    };
+
+    const getCartCount = () => cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
+    const getCartAmount = () => cartItems.reduce((sum, item) => sum + (item.product?.price || 0) * item.quantity, 0);
+
+    const applyCoupon = async (code) => {
+        setCouponLoading(true);
         try {
-            const response = await axios.get(backendurl + "/api/cart/get", { headers: { Authorization: `Bearer ${token}` } });
-            if (response.data.success) {
-                setCartItems(response.data.cartData)
-            }
-
+            const result = await couponApi.validateCoupon(code, getCartAmount());
+            setAppliedCoupon(result);
+            toast.success(`Coupon "${result.code}" applied — you saved ${currency}${result.discountAmount}`);
+            return result;
         } catch (error) {
-            console.error("Error fetching user cart:", error);
-            toast.error(handleAxiosError(error, "No cart items found. Add some products to your cart!"));
+            setAppliedCoupon(null);
+            toast.error(handleAxiosError(error, "Invalid coupon code"));
+            throw error;
+        } finally {
+            setCouponLoading(false);
+        }
+    };
 
+    const removeCoupon = () => setAppliedCoupon(null);
+
+    const loadWishlist = useCallback(async () => {
+        try {
+            const items = await wishlistApi.fetchWishlist();
+            setWishlist(items);
+        } catch (error) {
+            console.error("Error fetching wishlist:", error);
         }
-    }
-    useEffect(() => { getProducts() }, [])
+    }, []);
+
+    const isWishlisted = (productId) => wishlist.some((item) => item.productId === productId);
+
+    const toggleWishlist = async (productId) => {
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        try {
+            if (isWishlisted(productId)) {
+                await wishlistApi.removeFromWishlist(productId);
+                toast.success("Removed from wishlist");
+            } else {
+                await wishlistApi.addToWishlist(productId);
+                toast.success("Added to wishlist");
+            }
+            await loadWishlist();
+        } catch (error) {
+            toast.error(handleAxiosError(error, "Failed to update wishlist"));
+        }
+    };
+
+    const logout = async () => {
+        await authApi.logout();
+        setUser(null);
+        setCartItems([]);
+        setWishlist([]);
+        setAppliedCoupon(null);
+        navigate('/login');
+    };
+
     useEffect(() => {
-        if (!token && localStorage.getItem("token")) {
-            setToken(localStorage.getItem("token"))
-            getUserCart(localStorage.getItem("token"))
+        getProducts();
+    }, [getProducts]);
+
+    // Silent refresh on load: the access token only ever lives in memory, so
+    // a hard refresh loses it — this exchanges the httpOnly refresh cookie
+    // (if any) for a fresh access token without the user re-entering a password.
+    useEffect(() => {
+        setAuthChangeListener((newToken) => {
+            if (!newToken) {
+                setUser(null);
+                setCartItems([]);
+            }
+        });
+
+        (async () => {
+            try {
+                const newToken = await refreshAccessToken();
+                if (newToken) {
+                    const me = await authApi.fetchMe();
+                    setUser(me);
+                }
+            } catch {
+                setAccessToken(null);
+            } finally {
+                setAuthReady(true);
+            }
+        })();
+    }, []);
+
+    useEffect(() => {
+        if (user) {
+            loadCart();
+            loadWishlist();
         }
-    }, [])
-    const value = { currency, products, delivery_fee, search, setSearch, showSearch, setShowSearch, navigate, cartItems, addToCart, getCartCount, updateQuantity, getCartAmount, backendurl, token, setToken, setCartItems }
+    }, [user, loadCart, loadWishlist]);
+
+    const value = {
+        currency, products, productsLoaded, search, setSearch, showSearch, setShowSearch,
+        navigate, cartItems, addToCart, getCartCount, updateQuantity, getCartAmount, backendurl,
+        token, user, setUser, authReady, logout, loadCart,
+        wishlist, loadWishlist, isWishlisted, toggleWishlist,
+        appliedCoupon, couponLoading, applyCoupon, removeCoupon,
+        deliveryMethod, setDeliveryMethod, storeSettings,
+    }
     return (
         <ShopContext.Provider value={value}>
             {props.children}

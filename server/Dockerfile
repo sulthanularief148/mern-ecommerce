@@ -1,18 +1,30 @@
-# Use Node.js as the base image
-FROM node:20.11.1
-
-# Set working directory
+# ---- deps: install once, reused by both dev and prod stages ----
+FROM node:20-alpine AS deps
 WORKDIR /app
-
-# Copy package files and install dependencies
 COPY package.json package-lock.json ./
-RUN npm install
+COPY prisma ./prisma
+RUN npm ci && npx prisma generate
 
-# Copy the entire application
+# ---- production runtime ----
+FROM node:20-alpine AS production
+RUN apk add --no-cache dumb-init
+WORKDIR /app
+ENV NODE_ENV=production
+
+RUN addgroup -S nodejs && adduser -S ecofashion -G nodejs
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/prisma ./prisma
 COPY . .
 
-# Expose the server port
+RUN chmod +x docker-entrypoint.sh && chown -R ecofashion:nodejs /app
+
+USER ecofashion
 EXPOSE 4000
 
-# Start the server
-CMD ["npm", "start"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+# dumb-init forwards SIGTERM correctly so Prisma/Redis connections close
+# cleanly on container stop instead of being killed mid-request.
+ENTRYPOINT ["dumb-init", "--", "./docker-entrypoint.sh"]

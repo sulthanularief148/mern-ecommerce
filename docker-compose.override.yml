@@ -1,0 +1,15 @@
+# TEMPORARY — created for a short public demo via Cloudflare quick tunnels.
+# Safe to delete this file any time to fall back to the local-only config
+# in docker-compose.yml; `docker compose up -d` will then recreate the
+# affected containers with the original settings.
+#
+# Admin now talks to the API same-origin (via its own nginx proxy), so it no
+# longer needs a build-time VITE_BACKEND_URL override like last time — but
+# the server's own CORS allow-list still checks the browser's Origin header
+# on every state-changing request regardless of same-origin proxying, so
+# both tunnel origins still need to be listed here.
+services:
+  server:
+    environment:
+      ALLOWED_ORIGINS: "http://localhost:8090,http://localhost:5174,http://localhost:4000,https://jurisdiction-rows-clinton-wishing.trycloudflare.com,https://discount-aircraft-write-airline.trycloudflare.com"
+      CLIENT_URL: "https://jurisdiction-rows-clinton-wishing.trycloudflare.com"
